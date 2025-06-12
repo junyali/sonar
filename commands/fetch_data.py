@@ -64,6 +64,18 @@ def get_search_modal_view() -> Dict[str, Any]:
             },
             {
                 "type": "input",
+                "block_id": "user_mentions",
+                "element": {
+                    "type": "multi_users_select",
+                    "action_id": "user_mentions_input",
+                    "placeholder": {"type": "plain_text", "text": "Select a user (max 1)"},
+                    "max_selected_items": 1,
+                },
+                "label": {"type": "plain_text", "text": "User Mention (Alternative to User ID)"},
+                "optional": True,
+            },
+            {
+                "type": "input",
                 "block_id": "date_range_start",
                 "element": {
                     "type": "datepicker",
@@ -89,7 +101,7 @@ def get_search_modal_view() -> Dict[str, Any]:
                 "elements": [
                     {
                         "type": "mrkdwn",
-                        "text": "• For Standard Search: Fill in User ID or IP Address\n• For other searches: The corresponding field is required",
+                        "text": "• For Standard Search: Fill in User ID, User Mention, or IP Address\n• For other searches: The corresponding field is required\n• Use either User ID or User Mention, not both",
                     }
                 ],
             },

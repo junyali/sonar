@@ -16,8 +16,46 @@ async def handle_search(client: WebClient, ack, view):
         "selected_date"
     ]
     end_date = view["state"]["values"]["date_range_end"]["end_date"]["selected_date"]
+    
+    # Extract user mentions
+    user_mentions = view["state"]["values"]["user_mentions"]["user_mentions_input"]["selected_users"]
+    
+    if user_mentions and len(user_mentions) > 1:
+        await client.chat_postMessage(
+            channel=ALLOWED_CHANNEL_ID,
+            text="Error: Please select only one user mention. Multiple user mentions are not supported.",
+            blocks=[
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": "*Error: Multiple user mentions detected*\nPlease select only one user mention and try again.",
+                    },
+                }
+            ],
+        )
+        return
+    
+    if user_input and user_mentions:
+        await client.chat_postMessage(
+            channel=ALLOWED_CHANNEL_ID,
+            text="Error: Please use either User ID or User Mention, not both.",
+            blocks=[
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": "*Error: Conflicting user inputs*\nPlease use either the User ID field or User Mention field, not both.",
+                    },
+                }
+            ],
+        )
+        return
+    
+    # Use user mention if provided, otherwise use user input
+    final_user_id = user_mentions[0] if user_mentions else user_input
 
-    print(f"📝 Search parameters - Type: {search_type}, User: {user_input}, IP: {ip_input}, Date range: {start_date} to {end_date}")
+    print(f"📝 Search parameters - Type: {search_type}, User: {final_user_id}, IP: {ip_input}, Date range: {start_date} to {end_date}")
     loading_message = await client.chat_postMessage(
         channel=ALLOWED_CHANNEL_ID,
         text="🔄 Processing your search request...",
@@ -33,7 +71,7 @@ async def handle_search(client: WebClient, ack, view):
     )
 
     search_params = {
-        "user_id": user_input.strip() if user_input else None,
+        "user_id": final_user_id.strip() if final_user_id else None,
         "ip_address": ip_input.strip() if ip_input else None,
         "start_date": start_date,
         "end_date": end_date,
