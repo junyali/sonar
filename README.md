@@ -9,7 +9,7 @@ Since Hack Club's Slack is not on Enterprise Grid, admin.* API endpoints are not
 3. Create a `.env` file in the root directory use `sample.env` as example or the following
 
    ```env
-   AllOWED_CHANNEL_ID=
+   ALLOWED_CHANNEL_IDS=channel_id_1,channel_id_2,channel_id_3
 
    SLACK_USER_TOKEN=
    SLACK_BOT_TOKEN=
