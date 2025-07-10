@@ -6,7 +6,9 @@ from slack_sdk.web.async_client import AsyncWebClient
 
 load_dotenv()
 
-ALLOWED_CHANNEL_ID = os.getenv("ALLOWED_CHANNEL_ID")
+ALLOWED_CHANNEL_IDS_STR = os.getenv("ALLOWED_CHANNEL_IDS", "")
+ALLOWED_CHANNEL_IDS = [channel_id.strip() for channel_id in ALLOWED_CHANNEL_IDS_STR.split(",") if channel_id.strip()]
+
 SLACK_USER_TOKEN = os.getenv("SLACK_USER_TOKEN")
 SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN")
 SLACK_APP_TOKEN = os.getenv("SLACK_APP_TOKEN")

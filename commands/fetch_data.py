@@ -1,5 +1,5 @@
 from typing import Dict, Any
-from utils.slack_utils import is_user_authorized
+from utils.slack_utils import is_user_authorized, is_channel_allowed
 from slack_bolt import Ack, BoltContext
 from slack_sdk import WebClient
 
@@ -114,6 +114,14 @@ async def fetch_data(
     client: WebClient, ack: Ack, body: Dict[str, Any], context: BoltContext
 ) -> None:
     await ack()
+
+    if not is_channel_allowed(body["channel_id"]):
+        await client.chat_postEphemeral(
+            channel=body["channel_id"],
+            user=body["user_id"],
+            text="🚫 This command can only be used in authorized channels.",
+        )
+        return
 
     if not await is_user_authorized(body["user_id"]):
         await client.chat_postEphemeral(

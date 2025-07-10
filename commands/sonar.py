@@ -1,11 +1,19 @@
 from typing import Dict, Any
-from utils.slack_utils import is_user_authorized
+from utils.slack_utils import is_user_authorized, is_channel_allowed
 from slack_bolt import Ack, BoltContext
 from slack_sdk import WebClient
 
 
 async def handle_sonar(client: WebClient, ack: Ack, body: Dict[str, Any], context: BoltContext) -> None:
     await ack()
+
+    if not is_channel_allowed(body["channel_id"]):
+        await client.chat_postEphemeral(
+            channel=body["channel_id"],
+            user=body["user_id"],
+            text="🚫 This command can only be used in authorized channels.",
+        )
+        return
 
     if not await is_user_authorized(body["user_id"]):
         await client.chat_postEphemeral(
@@ -19,6 +27,7 @@ async def handle_sonar(client: WebClient, ack: Ack, body: Dict[str, Any], contex
         "type": "modal",
         "callback_id": "sonar_modal",
         "title": {"type": "plain_text", "text": "🔍 Sonar"},
+        "private_metadata": body["channel_id"],
         "blocks": [
             {
                 "type": "section",

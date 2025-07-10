@@ -2,7 +2,12 @@ import asyncio
 import json
 from math import ceil
 from typing import List, Dict, Any, Optional
-from config import app, ALLOWED_CHANNEL_ID
+from config import app, ALLOWED_CHANNEL_IDS
+
+
+def is_channel_allowed(channel_id: str) -> bool:
+    """Check if a channel ID is in the list of allowed channels."""
+    return channel_id in ALLOWED_CHANNEL_IDS
 
 
 def create_field(text: str, value: str) -> Dict[str, str]:
@@ -194,7 +199,7 @@ async def check_bot_channel():
         bot_channels = [
             channel
             for channel in channels
-            if channel.get("is_member") and channel["id"] != ALLOWED_CHANNEL_ID
+            if channel.get("is_member") and not is_channel_allowed(channel["id"])
         ]
 
         for channel in bot_channels:
@@ -222,10 +227,14 @@ async def fetch_all_channels():
 async def remove_bot_from_channel(channel):
     try:
         await app.client.conversations_leave(channel=channel["id"])
-        await app.client.chat_postMessage(
-            channel=ALLOWED_CHANNEL_ID,
-            text=f"🚨 The bot has been removed from a non-allowed channel (ID: {channel['id']}, Name: {channel.get('name')}, Creator: {channel.get('creator')}).",
-        )
+        # dis sends a message to the first allowed channel which should be #sonar-logs
+        if ALLOWED_CHANNEL_IDS:
+            await app.client.chat_postMessage(
+                channel=ALLOWED_CHANNEL_IDS[0],
+                text=f"🚨 The bot has been removed from a non-allowed channel (ID: {channel['id']}, Name: {channel.get('name')}, Creator: {channel.get('creator')}).",
+            )
+        else:
+            print(f"⚠️ No allowed channels configured to send notification about leaving {channel['id']}")
     except Exception as e:
         print(f"⚠️ Error leaving channel {channel['id']}: {e}")
 

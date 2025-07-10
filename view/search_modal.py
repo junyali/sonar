@@ -1,4 +1,4 @@
-from config import ALLOWED_CHANNEL_ID
+from config import ALLOWED_CHANNEL_IDS
 from utils.slack_utils import format_slack_message
 from utils.elastic_search import standard_search, unique_user_search, unique_ip_search
 from slack_sdk import WebClient
@@ -6,6 +6,14 @@ from slack_sdk import WebClient
 
 async def handle_search(client: WebClient, ack, view):
     await ack()
+
+    triggering_channel = view.get("private_metadata")
+    if not triggering_channel and ALLOWED_CHANNEL_IDS:
+        triggering_channel = ALLOWED_CHANNEL_IDS[0]
+    
+    if not triggering_channel:
+        print("⚠️ No triggering channel found and no allowed channels configured!")
+        return
 
     search_type = view["state"]["values"]["search_type"]["type_selection"][
         "selected_option"
@@ -22,7 +30,7 @@ async def handle_search(client: WebClient, ack, view):
     
     if user_mentions and len(user_mentions) > 1:
         await client.chat_postMessage(
-            channel=ALLOWED_CHANNEL_ID,
+            channel=triggering_channel,
             text="Error: Please select only one user mention. Multiple user mentions are not supported.",
             blocks=[
                 {
@@ -38,7 +46,7 @@ async def handle_search(client: WebClient, ack, view):
     
     if user_input and user_mentions:
         await client.chat_postMessage(
-            channel=ALLOWED_CHANNEL_ID,
+            channel=triggering_channel,
             text="Error: Please use either User ID or User Mention, not both.",
             blocks=[
                 {
@@ -57,7 +65,7 @@ async def handle_search(client: WebClient, ack, view):
 
     print(f"📝 Search parameters - Type: {search_type}, User: {final_user_id}, IP: {ip_input}, Date range: {start_date} to {end_date}")
     loading_message = await client.chat_postMessage(
-        channel=ALLOWED_CHANNEL_ID,
+        channel=triggering_channel,
         text="🔄 Processing your search request...",
         blocks=[
             {
@@ -111,7 +119,7 @@ async def handle_search(client: WebClient, ack, view):
             
             if not potential_alts:
                 await client.chat_postMessage(
-                    channel=ALLOWED_CHANNEL_ID,
+                    channel=triggering_channel,
                     text=f"No potential alternate accounts found for user <@{search_params['user_id']}> with confidence threshold {confidence_threshold}.",
                 )
                 return
@@ -139,7 +147,7 @@ async def handle_search(client: WebClient, ack, view):
                     })
 
                 await client.chat_postMessage(
-                    channel=ALLOWED_CHANNEL_ID,
+                    channel=triggering_channel,
                     blocks=blocks,
                     text=f"Found {len(potential_alts)} potential alternate accounts for user <@{search_params['user_id']}>. (Page {page}/{total_pages})",
                 )
@@ -168,7 +176,7 @@ async def handle_search(client: WebClient, ack, view):
             search_type=search_type,
         )
         await client.chat_update(
-            channel=ALLOWED_CHANNEL_ID,
+            channel=triggering_channel,
             ts=loading_message["ts"],
             blocks=message_blocks,
             text=header_message,
@@ -176,7 +184,7 @@ async def handle_search(client: WebClient, ack, view):
         print("Search process completed successfully!")
     except Exception as e:
         await client.chat_update(
-            channel=ALLOWED_CHANNEL_ID,
+            channel=triggering_channel,
             ts=loading_message["ts"],
             blocks=[
                 {
