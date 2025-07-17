@@ -10,6 +10,7 @@ Since Hack Club's Slack is not on Enterprise Grid, admin.* API endpoints are not
 
    ```env
    ALLOWED_CHANNEL_IDS=channel_id_1,channel_id_2,channel_id_3
+   WHITELISTED_USER_IDS=user_id_1,user_id_2,user_id_3
 
    SLACK_USER_TOKEN=
    SLACK_BOT_TOKEN=

@@ -2,7 +2,7 @@ import asyncio
 import json
 from math import ceil
 from typing import List, Dict, Any, Optional
-from config import app, ALLOWED_CHANNEL_IDS
+from config import app, ALLOWED_CHANNEL_IDS, WHITELISTED_USER_IDS
 
 
 def is_channel_allowed(channel_id: str) -> bool:
@@ -241,6 +241,11 @@ async def remove_bot_from_channel(channel):
 
 async def is_user_authorized(user_id: str) -> bool:
     try:
+        # Check if user is in the whitelist first (faster check)
+        if user_id in WHITELISTED_USER_IDS:
+            return True
+            
+        # Check if user is admin or owner
         user_info = await app.client.users_info(user=user_id)
         return user_info["user"].get("is_admin", False) or user_info["user"].get(
             "is_owner", False
