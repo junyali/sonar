@@ -60,6 +60,69 @@ async def standard_search(
         return [{"error": f"⚠️ Error querying Elasticsearch: {str(e)}"}], 0
 
 
+async def find_alts(
+    user_id: str,
+    page: int = 1,
+    size: int = 10,
+) -> Tuple[List[Dict[str, Any]], int]:
+    if not user_id:
+        return [], 0
+
+    ips_data, _ = await unique_ip_search(
+        user_id=user_id,
+        page=1,
+        size=100000
+    )
+
+    if not ips_data or "error" in str(ips_data):
+        return [], 0
+
+    ip_addresses = [item["ip"] for item in ips_data if "ip" in item]
+
+    if not ip_addresses:
+        return [], 0
+
+    potential_alts = {}
+
+    for ip in ip_addresses:
+        users_data, _ = await unique_user_search(
+            ip_address=ip,
+            page=1,
+            size=10000
+        )
+
+        for user_entry in users_data:
+            alt_user_id = user_entry.get("user_id")
+
+            if not alt_user_id or alt_user_id == user_id:
+                continue
+
+            if alt_user_id not in potential_alts:
+                potential_alts[alt_user_id] = {
+                    "user_id": alt_user_id,
+                    "shared_ips": set(),
+                }
+
+            potential_alts[alt_user_id]["shared_ips"].add(ip)
+
+    results = []
+    for alt_data in potential_alts.values():
+        shared_ips_list = sorted(list(alt_data["shared_ips"]))
+        results.append({
+            "user_id": alt_data["user_id"],
+            "shared_ip_count": len(shared_ips_list),
+            "shared_ips": shared_ips_list,
+        })
+
+    results.sort(key=lambda x: x["shared_ip_count"], reverse=True)
+
+    total = len(results)
+    start_idx = (page - 1) * size
+    end_idx = start_idx + size
+    paginated_results = results[start_idx:end_idx]
+
+    return paginated_results, total
+
 async def fetch_unique(
     term_field: str,
     term_value: Optional[str],
